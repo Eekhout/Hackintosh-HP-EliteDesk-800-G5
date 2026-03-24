@@ -1,4 +1,4 @@
-# 🍏 HP EliteDesk 800 G5 Mini - Hackintosh (OpenCore)
+# 🍏 HP EliteDesk 800 G5 Mini - Eekhoutosh (OpenCore)
 
 ![macOS](https://img.shields.io/badge/macOS-Sonoma%20%7C%20Sequoia-black?style=for-the-badge&logo=apple)
 ![OpenCore](https://img.shields.io/badge/OpenCore-Bootloader-blue?style=for-the-badge)
