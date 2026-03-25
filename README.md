@@ -48,6 +48,30 @@ Before booting the EFI, it is strictly necessary to configure the BIOS properly.
 
 ---
 
+## 🚀 Two-Phase Installation Strategy (CRITICAL)
+
+To ensure a seamless transition to macOS Sequoia, this repository organizes the configuration into two critical stages. This separation is vital because Sequoia has increased sensitivity regarding USB port mapping and Framebuffer routing on HP hardware.
+
+### 1. Pre-Installation Phase (Recovery Mode)
+*Located in the `config pre instalacion` folder.*
+
+*   **What's inside?**: A minimalist, "safe-mode" configuration specifically designed to allow the macOS installer to boot from the USB without interruptions.
+*   **Why is it necessary?**: During the recovery environment load, macOS Sequoia is unforgiving with the USB port limit. If the system detects more than 15 ports (common on HP hardware without mapping), it will launch an immediate **Kernel Panic**. This version:
+    *   Enforces a strict, basic mapping to prevent crashes.
+    *   Ensures the video signal reaches the monitor during the installation process (avoiding the "Black Screen").
+    *   Keeps diagnostic flags (verbose mode) active to monitor progress.
+
+### 2. Post-Installation Phase (Optimization & Stability)
+*Located in the `config post Instalacion` folder.*
+
+*   **What's inside?**: The definitive performance engine. It includes surgical USB mapping via `USBPorts.kext`, full hardware acceleration (QE/CI) for the UHD 630, and system identity configuration.
+*   **Why apply it?**: Once the system is installed on the internal drive, the goal is total hardware integration:
+    *   **Full Acceleration**: Enables macOS to use the GPU's full power for fluid animations and video editing.
+    *   **iServices**: This is where unique serial numbers (SMBIOS `Macmini8,1`) are injected to make iCloud, iMessage, and FaceTime work securely.
+    *   **Apple Aesthetics**: Removes boot logs to show only the clean Apple logo and enables support for over-the-air (OTA) updates via `RestrictEvents`.
+
+---
+
 ## 🛠️ The Configuration Journey: Challenges & Solutions
 
 Building a working EFI for the EliteDesk G5 comes with particular challenges. Here is exactly what we modified under the hood and why:
@@ -89,6 +113,5 @@ To make the machine feel like a real Mac rather than a hacking project:
 * [Acidanthera](https://github.com/acidanthera) for OpenCore, Lilu, WhateverGreen, AppleALC, and their titanic contributions.
 * [OpenIntelWireless](https://github.com/OpenIntelWireless) for the Intel Wi-Fi and Bluetooth drivers.
 * EliteDesk G4/G5 Hackintosh communities and [de-luca](https://github.com/de-luca) for the USB internal mapping insights.
-* **Antigravity AI** for providing debugging logic and configuration tuning assistance during the build process.
 
 > **Disclaimer:** This project is provided for educational purposes. I am not responsible for any damage caused to your equipment. Please make sure to understand the OpenCore architecture before flashing custom bootloaders.
