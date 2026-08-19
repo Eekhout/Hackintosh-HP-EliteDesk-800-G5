@@ -24,7 +24,7 @@ Welcome to the ultimate Hackintosh configuration for the **HP EliteDesk 800 G5 M
 ---
 
 ## ✅ What's Working?
-- [x] Full Graphics Acceleration (QE/CI) via DP/HDMI.
+- [x] Full Graphics Acceleration (QE/CI) via DP/HDMI with support for High-Refresh Displays (up to 165Hz @ 30-Bit Color).
 - [x] Audio (Internal Speaker & Audio Jacks) via `AppleALC`.
 - [x] All USB Ports (USB 2.0 & USB 3.0 mapped correctly within the 15-port limit).
 - [x] Wi-Fi & Internet via `itlwm.kext` + HeliPort.
@@ -38,10 +38,12 @@ Welcome to the ultimate Hackintosh configuration for the **HP EliteDesk 800 G5 M
 
 ## ⚙️ BIOS / UEFI Configuration (CRITICAL)
 
-Before booting the EFI, it is strictly necessary to configure the BIOS properly. The most common cause of "Kernel Panic" on this machine is directly related to the graphics memory allocation.
+Before booting the EFI, it is strictly necessary to configure the BIOS properly. Graphics stability and kernel integrity depend directly on the video memory allocation:
 
-* **Video Memory Size (DVMT Pre-Allocated):** Must be strictly set to **64 MB**. 
-  *(Setting this lower will cause constant boot loops, and higher settings like 512MB are unnecessary and can conflict with macOS memory management).*
+* **Video Memory Size (DVMT Pre-Allocated):** Set to **64 MB** or **128 MB**. 
+  * *64 MB:* Minimum recommended for standard 1080p/4K 60Hz displays.
+  * *128 MB (Highly Recommended):* Ideal when using High-Refresh Rate monitors (144Hz / 165Hz) and 30-Bit / 10-bit color (ARGB2101010) or multi-monitor setups.
+  *(Setting this to 32MB without stolen memory patches will cause `IOAcceleratorFamily2` Kernel Panics or boot loops).*
 * **Secure Boot:** Disabled.
 * **Sure Start:** Disabled.
 * **Fast Boot:** Disabled.
@@ -76,11 +78,10 @@ To ensure a seamless transition to macOS Sequoia, this repository organizes the 
 
 Building a working EFI for the EliteDesk G5 comes with particular challenges. Here is exactly what we modified under the hood and why:
 
-### 1. The "Black Screen" UHD 630 Graphics Fix 🖥️
-By default, macOS tries to route the video output blindly, resulting in a black screen when connected via the HP's rear DisplayPort or HDMI ports. 
-* **The Fix:** We injected specific Framebuffer patches into `PciRoot(0x0)/Pci(0x2,0x0)`. 
-* We used `AAPL,ig-platform-id` = `AACSPg==` (`3E920000`).
-* We explicitly mapped the connectors (`con0`, `con1`, `con2`) adjusting their Bus IDs and Types to force the signal out through the physical external ports, finally achieving full Hardware Acceleration (QE/CI) without using the debilitating `-igfxvesa` flag.
+### 1. The "Black Screen" UHD 630 Graphics Fix & `IOAcceleratorFamily2` Stability 🖥️
+By default, macOS tries to route the video output blindly, resulting in a black screen when connected via the HP's rear DisplayPort or HDMI ports. Furthermore, driving modern high-refresh monitors (165Hz / 30-Bit Color) or display sleep transitions in macOS Sequoia can trigger memory use-after-free panics (`[kalloc.type.var3.768]: element modified after free` in `com.apple.iokit.IOAcceleratorFamily2`).
+* **The Connector Fix:** We injected specific Framebuffer patches into `PciRoot(0x0)/Pci(0x2,0x0)` with `AAPL,ig-platform-id` = `AACSPg==` (`3E920000`) and explicitly mapped connectors (`con0`, `con1`, `con2`) with proper Bus IDs and Types.
+* **The Memory Buffer Fix:** We added `framebuffer-stolenmem` (`AAAwAQ==` / 19MB) and `framebuffer-fbmem` (`AACQAA==` / 9MB) to define precise memory boundaries for the framebuffer. Combined with **64MB/128MB DVMT** in BIOS, this permanently resolves `IOAcceleratorFamily2` kernel panics and delivers flawless 165Hz @ 1080p 30-Bit Metal 3 acceleration.
 
 ### 2. Overcoming the USB 15-Port Limit 🔌
 Initially, only USB 2.0 and the Type-C port were recognized. This happens because macOS reads the ports sequentially and hits the software limit of 15 ports before it can register the physically attached USB 3.0 ports.
