@@ -39,7 +39,8 @@ get_4k_cluster_usage() {
     local in_use total
     in_use=$(echo "$stats" | awk -F'/' '{print $1}' | tr -d ' ')
     total=$(echo "$stats" | awk -F'/' '{print $2}' | awk '{print $1}')
-    if [ "$total" -eq 0 ] 2>/dev/null; then
+    if [ "$total" -lt 2048 ] 2>/dev/null; then
+        # Pool dinámico aún pequeño recién arrancado el sistema; no es saturación real
         echo "0"
         return
     fi

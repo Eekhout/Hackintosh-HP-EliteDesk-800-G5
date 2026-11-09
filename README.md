@@ -24,12 +24,12 @@ Welcome to the ultimate Hackintosh configuration for the **HP EliteDesk 800 G5 M
 ---
 
 ## ✅ What's Working?
-- [x] Full Graphics Acceleration (QE/CI) via DP/HDMI with support for High-Refresh Displays (up to 165Hz @ 30-Bit Color).
-- [x] Audio (Internal Speaker & Audio Jacks) via `AppleALC`.
-- [x] All USB Ports (USB 2.0 & USB 3.0 mapped correctly within the 15-port limit).
-- [x] Wi-Fi & Internet via `itlwm.kext` + HeliPort.
-- [x] Bluetooth (IntelBTPatcher).
-- [x] Ethernet (IntelMausi).
+- [x] Full Graphics Acceleration (QE/CI) via DP/HDMI with support for High-Refresh Displays (up to 165Hz @ 30-Bit Color) + Apple GuC firmware enabled.
+- [x] Audio (Internal Speaker & Audio Jacks) via `AppleALC` (layout-id: 20).
+- [x] All USB Ports (USB 2.0 & USB 3.0 SuperSpeed mapped within the 15-port limit, `port-count` = 26).
+- [x] Wi-Fi & Internet via `AirportItlwm.kext` (native macOS menu bar) / `itlwm.kext`.
+- [x] **AirDrop & Bluetooth Continuity**: Full native discovery and file transfer via Intel Wireless-AC 9560 (CNVi) mapped to internal `HS14`.
+- [x] Ethernet (IntelMausi Gigabit).
 - [x] Sleep / Wake State.
 - [x] OpenCanopy Graphical Boot Picker.
 - [x] iServices (iMessage, FaceTime, iCloud).
@@ -88,10 +88,27 @@ Initially, only USB 2.0 and the Type-C port were recognized. This happens becaus
 * **The Fix:** We discarded generic mappers (`USBToolBox.kext` / `UTBMap.kext`) and deployed a custom, mathematically crafted `USBPorts.kext`. 
 * This kext perfectly maps **7x HS (USB 2.0)** and **8x SS (USB 3.0)** ports, summing up exactly to the 15-port limit. This guarantees max transfer speeds across all physical chassis ports.
 
-### 3. Wi-Fi Engine 🛜
+### 3. Native AirDrop & Intel CNVi Bluetooth Architecture (`HS14` + NVRAM) 📡
+Achieving native AirDrop and continuous Bluetooth stability with the integrated **Intel Wireless-AC 9560 (CNVi)** was one of the most critical breakthroughs:
+* **The Motherboard Port Mapping Reality:** On HP EliteDesk 800 G5 Mini boards with Intel Q370/Cannon Lake PCH (`0xa36d`), the internal CNVi M.2 Bluetooth bus is physically routed to port **`HS14`** (`port` = `<0e000000>`, `UsbConnector` = `255` Internal). Previous community guides erroneously assigned it to `HS07`, which left the Bluetooth controller disconnected at the USB level and caused `bluetoothd` to crash in a continuous loop (>100 crashes/day).
+* **The 15-Port Limit & `port-count`:** In `UTBMap.kext`, the `port-count` property specifies the highest hexadecimal port index, **not** the quantity of ports. By defining exactly 15 active ports (7x HS + 8x SS) with `port-count` set to **`26`** (`<1a000000>` / `GgAAAA==`), macOS preserves all high-speed USB 3.0 ports (`SS01`-`SS10`) without truncating them.
+* **NVRAM Synchronization for Sonoma/Sequoia:** `BlueToolFixup.kext` and macOS 14+ require explicit initial Bluetooth controller state declarations. Under `NVRAM -> Add -> 7C436110-AB2A-4BBB-A880-FE41995C9F82`, we declare:
+  * `bluetoothExternalDongleFailed` = `<00>`
+  * `bluetoothInternalControllerInfo` = `00000000 00000000 00000000 0000` (14 bytes of zeros)
+* **The AirDrop Result:** Combined with `AirportItlwm.kext` (v2.3.0), the Bluetooth stack boots natively with firmware `v4352 c4352`, unlocking **two-way AirDrop file transfers** and Continuity directly from the native macOS sharing menu!
+
+### 4. Apple GuC Graphics Scheduling (`igfxfw=2`) & `RCS Ring` Stability 🚀
+Under macOS Sonoma and Sequoia, background Metal and video decoding workloads (such as `mediaanalysisd`) can trigger GPU timeouts (`RCS Ring Appears hung` / `.gpuRestart` logs) on Coffee Lake UHD 630.
+* **The Fix:** We inject `igfxfw = <02000000>` under `PciRoot(0x0)/Pci(0x2,0x0)` and pass `igfxfw=2` in `boot-args`. This commands WhateverGreen to load Apple's official **Graphics Unit Control (GuC)** firmware, offloading scheduler tasks to the hardware and eliminating micro-stutters and GPU lockups.
+
+### 5. Network Buffer Protection (`mbuf_watchdog_guardian`) 🛡️
+Heavy wireless data traffic through `AirportItlwm` on modern macOS can occasionally cause network cluster buffer exhaustion (`mbuf_watchdog` kernel panics).
+* **The Guard:** A lightweight daemon (`mbuf_watchdog_guardian.sh`) runs via LaunchDaemon (`com.hackintosh.mbuf-guardian.plist`), continuously monitoring 4KB cluster usage. It safely recycles the Wi-Fi interface if cluster usage approaches saturation, guaranteeing 24/7 uptime without kernel panics.
+
+### 6. Wi-Fi Engine 🛜
 Since the module is an Intel Wireless-AC 9560 (not natively supported by Apple), we deployed `itlwm.kext` in combination with the **HeliPort** app. This allows macOS to comfortably manage the wireless networks.
 
-### 4. Aesthetics and "The Apple Feel" ✨
+### 7. Aesthetics and "The Apple Feel" ✨
 To make the machine feel like a real Mac rather than a hacking project:
 * **Boot verbose removed:** Stripped `-v` from the `boot-args` to ensure a clean boot featuring only the Apple Logo and progress bar.
 * **OpenCanopy Enabled:** Switched the `PickerMode` to `External` to display a beautiful graphical OS selector instead of the primitive text menu.

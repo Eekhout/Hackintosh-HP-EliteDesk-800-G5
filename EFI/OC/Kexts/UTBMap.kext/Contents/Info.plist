@@ -38,7 +38,7 @@
 			<dict>
 				<key>port-count</key>
 				<data>
-				DwAAAA==
+				GgAAAA==
 				</data>
 				<key>ports</key>
 				<dict>
@@ -98,6 +98,8 @@
 					</dict>
 					<key>HS14</key>
 					<dict>
+						<key>Comment</key>
+						<string>Intel Bluetooth (Internal)</string>
 						<key>UsbConnector</key>
 						<integer>255</integer>
 						<key>port</key>

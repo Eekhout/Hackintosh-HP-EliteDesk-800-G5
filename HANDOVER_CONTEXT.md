@@ -14,13 +14,15 @@
 * **Pantalla:** 1080p FHD @ **165.00 Hz** con **30-Bit Color** (ARGB2101010) vía DisplayPort.
 * **Estabilidad del Framebuffer:** Resuelto el Kernel Panic de `IOAcceleratorFamily2` (`element modified after free`) mediante:
   * BIOS DVMT Pre-Allocated configurado en **128 MB**.
-  * Inyección de parches de memoria en `PciRoot(0x0)/Pci(0x2,0x0)`:
+  * Inyección de parches de memoria y microcódigo GuC en `PciRoot(0x0)/Pci(0x2,0x0)`:
     * `framebuffer-stolenmem`: `AAAwAQ==` (19 MB)
     * `framebuffer-fbmem`: `AACQAA==` (9 MB)
+    * `igfxfw`: `AgAAAA==` (`02000000` - Firmware oficial Apple GuC activo para prevenir cuelgues `RCS Ring` / `gpuRestart`)
+  * Agente en segundo plano `com.apple.mediaanalysisd` deshabilitado.
 
 ### 3. Puertos USB y Conectividad
-* **Controlador Host:** Intel Cannon Lake PCH USB 3.1 (`AppleIntelCNLUSBXHCI`, PCI ID: `0xa36d`).
-* **Bluetooth Host Controller:** Intel 9560 integrado, asignado correctamente como `Built-In: Yes` en `HS07` (sin riesgo de fallo en reposo/sleep).
+* **Controlador Host:** Intel Cannon Lake PCH USB 3.1 (`AppleIntelCNLUSBXHCI`, PCI ID: `0xa36d`), `port-count` fijado en `26` (`<1a000000>`, 15 puertos totales: 7x HS + 8x SS).
+* **Bluetooth Host Controller:** Intel Wireless-AC 9560 (CNVi) integrado, asignado en **`HS14` (`0x0e000000`, `UsbConnector: 255` Internal)** con llaves NVRAM `bluetoothExternalDongleFailed` (`<00>`) y `bluetoothInternalControllerInfo` (14 bytes `<00...>`) en `NVRAM -> Add` y `Delete`.
 * **Periféricos USB:**
   * Raton Gaming Razer Basilisk X HyperSpeed (`0x14400000`) - Operativo.
   * Receptor Unifying/USB Logitech (`0x14300000`) - Operativo.
@@ -33,7 +35,7 @@
 * **Solución Implementada:**
   * Daemon guardián `mbuf_watchdog_guardian.sh` instalado como LaunchDaemon (`com.hackintosh.mbuf-guardian`).
   * Monitoriza uso de clusters cada 30s y recicla Wi-Fi automáticamente al 85% de saturación.
-  * `boot-args` actualizados a: `igfxonln=1 keepsyms=1`.
+  * `boot-args` actualizados a: `igfxonln=1 igfxfw=2 keepsyms=1`.
   * Ethernet (en0) configurado como interfaz principal para cargas pesadas.
   * Log de monitorización: `/var/log/mbuf_guardian.log`.
 * **Instalador:** `instalar_fix_mbuf.sh` (ejecutar con `sudo` para desplegar todo).
